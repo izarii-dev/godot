@@ -742,7 +742,10 @@ public:
 	FUNC2(viewport_set_vrs_update_mode, RID, ViewportVRSUpdateMode)
 	FUNC2(viewport_set_vrs_texture, RID, RID)
 
-	/* COMPOSITOR EFFECT */
+	FUNC2(viewport_set_cascade_mode, RID, ViewportCascadeMode)
+	FUNC1RC(ViewportCascadeMode, viewport_get_cascade_mode, RID)
+
+	/* ENVIRONMENT API */
 
 #undef server_name
 #undef ServerName
