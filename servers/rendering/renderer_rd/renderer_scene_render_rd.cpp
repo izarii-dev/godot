@@ -783,7 +783,58 @@ void RendererSceneRenderRD::_disable_clear_request(const RenderDataRD *p_render_
 	texture_storage->render_target_disable_clear_request(p_render_data->render_buffers->get_render_target());
 }
 
-void RendererSceneRenderRD::_render_buffers_debug_draw(RenderDataRD *p_render_data) {
+bool RendererSceneRenderRD::_debug_draw_can_use_effects(RS::ViewportDebugDraw p_debug_draw) {
+	bool can_use_effects = true;
+	switch (p_debug_draw) {
+		// No debug draw, use camera effects
+		case RS::VIEWPORT_DEBUG_DRAW_DISABLED:
+			can_use_effects = true;
+			break;
+		// Modes that completely override rendering to draw debug information should disable camera effects.
+		case RS::VIEWPORT_DEBUG_DRAW_UNSHADED:
+		case RS::VIEWPORT_DEBUG_DRAW_OVERDRAW:
+		case RS::VIEWPORT_DEBUG_DRAW_WIREFRAME:
+		case RS::VIEWPORT_DEBUG_DRAW_VOXEL_GI_ALBEDO:
+		case RS::VIEWPORT_DEBUG_DRAW_CLUSTER_OMNI_LIGHTS:
+		case RS::VIEWPORT_DEBUG_DRAW_CLUSTER_SPOT_LIGHTS:
+		case RS::VIEWPORT_DEBUG_DRAW_CLUSTER_DECALS:
+		case RS::VIEWPORT_DEBUG_DRAW_CLUSTER_REFLECTION_PROBES:
+		case RS::VIEWPORT_DEBUG_DRAW_INTERNAL_BUFFER:
+			can_use_effects = false;
+			break;
+		// Modes that draws information over part of the viewport needs camera effects because we see partially the normal draw mode.
+		case RS::VIEWPORT_DEBUG_DRAW_SHADOW_ATLAS:
+		case RS::VIEWPORT_DEBUG_DRAW_DIRECTIONAL_SHADOW_ATLAS:
+		case RS::VIEWPORT_DEBUG_DRAW_DECAL_ATLAS:
+		case RS::VIEWPORT_DEBUG_DRAW_MOTION_VECTORS:
+		// Modes that draws a buffer over viewport needs camera effects because if the buffer is not available it will be equivalent to normal draw mode.
+		case RS::VIEWPORT_DEBUG_DRAW_NORMAL_BUFFER:
+		case RS::VIEWPORT_DEBUG_DRAW_SSAO:
+		case RS::VIEWPORT_DEBUG_DRAW_SSIL:
+		case RS::VIEWPORT_DEBUG_DRAW_SDFGI:
+		case RS::VIEWPORT_DEBUG_DRAW_GI_BUFFER:
+		case RS::VIEWPORT_DEBUG_DRAW_OCCLUDERS:
+			can_use_effects = true;
+			break;
+		// Other debug draw modes keep camera effects.
+		case RS::VIEWPORT_DEBUG_DRAW_LIGHTING:
+		case RS::VIEWPORT_DEBUG_DRAW_VOXEL_GI_LIGHTING:
+		case RS::VIEWPORT_DEBUG_DRAW_VOXEL_GI_EMISSION:
+		case RS::VIEWPORT_DEBUG_DRAW_SCENE_LUMINANCE:
+		case RS::VIEWPORT_DEBUG_DRAW_PSSM_SPLITS:
+		case RS::VIEWPORT_DEBUG_DRAW_SDFGI_PROBES:
+		case RS::VIEWPORT_DEBUG_DRAW_DISABLE_LOD:
+			can_use_effects = true;
+			break;
+		default:
+			break;
+	}
+
+	return can_use_effects;
+}
+
+void RendererSceneRenderRD::_render_buffers_debug_draw(const RenderDataRD *p_render_data) {
+	RendererRD::LightStorage *light_storage = RendererRD::LightStorage::get_singleton();
 	RendererRD::TextureStorage *texture_storage = RendererRD::TextureStorage::get_singleton();
 
 	Ref<RenderSceneBuffersRD> rb = p_render_data->render_buffers;
@@ -805,16 +856,8 @@ void RendererSceneRenderRD::_render_buffers_debug_draw(RenderDataRD *p_render_da
 	}
 
 	if (debug_draw == RS::VIEWPORT_DEBUG_DRAW_DIRECTIONAL_SHADOW_ATLAS) {
-		RID shadow_atlas_texture;
-
-		bool step_cascades = p_render_data->viewport.is_valid() ? RSG::viewport->viewport_get_cascade_mode(p_render_data->viewport) != RS::VIEWPORT_CASCADE_ALL : false;
-		if (step_cascades) {
-			shadow_atlas_texture = RendererRD::LightStorage::get_singleton()->directional_shadow_get_texture(p_render_data->viewport);
-		} else {
-			shadow_atlas_texture = RendererRD::LightStorage::get_singleton()->directional_shadow_get_texture();
-		}
-
-		if (shadow_atlas_texture.is_valid()) {
+		if (RendererRD::LightStorage::get_singleton()->directional_shadow_get_texture().is_valid()) {
+			RID shadow_atlas_texture = RendererRD::LightStorage::get_singleton()->directional_shadow_get_texture();
 			Size2i rtsize = texture_storage->render_target_get_size(render_target);
 			RID dest_fb = texture_storage->render_target_get_rd_framebuffer(render_target);
 
@@ -859,9 +902,14 @@ void RendererSceneRenderRD::_render_buffers_debug_draw(RenderDataRD *p_render_da
 		}
 	}
 
+	if (debug_draw == RS::VIEWPORT_DEBUG_DRAW_INTERNAL_BUFFER) {
+		Size2 rtsize = texture_storage->render_target_get_size(render_target);
+		copy_effects->copy_to_fb_rect(rb->get_internal_texture(), texture_storage->render_target_get_rd_framebuffer(render_target), Rect2(Vector2(), rtsize), false, false);
+	}
+
 	if (debug_draw == RS::VIEWPORT_DEBUG_DRAW_NORMAL_BUFFER && _render_buffers_get_normal_texture(rb).is_valid()) {
 		Size2 rtsize = texture_storage->render_target_get_size(render_target);
-		copy_effects->copy_to_fb_rect(_render_buffers_get_normal_texture(rb), texture_storage->render_target_get_rd_framebuffer(render_target), Rect2(Vector2(), rtsize), false, false);
+		copy_effects->copy_to_fb_rect(_render_buffers_get_normal_texture(rb), texture_storage->render_target_get_rd_framebuffer(render_target), Rect2(Vector2(), rtsize), false, false, false, false, RID(), false, false, false, true);
 	}
 
 	if (debug_draw == RS::VIEWPORT_DEBUG_DRAW_OCCLUDERS) {
@@ -872,8 +920,12 @@ void RendererSceneRenderRD::_render_buffers_debug_draw(RenderDataRD *p_render_da
 	}
 
 	if (debug_draw == RS::VIEWPORT_DEBUG_DRAW_MOTION_VECTORS && _render_buffers_get_velocity_texture(rb).is_valid()) {
-		Size2i rtsize = texture_storage->render_target_get_size(render_target);
-		copy_effects->copy_to_fb_rect(_render_buffers_get_velocity_texture(rb), texture_storage->render_target_get_rd_framebuffer(render_target), Rect2(Vector2(), rtsize), false, false);
+		RID velocity = _render_buffers_get_velocity_texture(rb);
+		RID depth = rb->get_depth_texture();
+		RID dest_fb = texture_storage->render_target_get_rd_framebuffer(render_target);
+		Size2i resolution = rb->get_internal_size();
+
+		debug_effects->draw_motion_vectors(velocity, depth, dest_fb, p_render_data->scene_data->cam_projection, p_render_data->scene_data->cam_transform, p_render_data->scene_data->prev_cam_projection, p_render_data->scene_data->prev_cam_transform, resolution);
 	}
 }
 
@@ -1079,15 +1131,7 @@ void RendererSceneRenderRD::_post_prepass_render(RenderDataRD *p_render_data, bo
 	}
 }
 
-void RendererSceneRenderRD::_pre_resolve_render(RenderDataRD *p_render_data, bool p_use_gi) {
-	if (p_render_data->render_buffers.is_valid()) {
-		if (p_use_gi) {
-			RD::get_singleton()->compute_list_end();
-		}
-	}
-}
-
-void RendererSceneRenderRD::render_scene(const Ref<RenderSceneBuffers> &p_render_buffers, const CameraData *p_camera_data, const CameraData *p_prev_camera_data, const PagedArray<RenderGeometryInstance *> &p_instances, const PagedArray<RID> &p_lights, const PagedArray<RID> &p_reflection_probes, const PagedArray<RID> &p_voxel_gi_instances, const PagedArray<RID> &p_decals, const PagedArray<RID> &p_lightmaps, const PagedArray<RID> &p_fog_volumes, RID p_environment, RID p_camera_attributes, RID p_shadow_atlas, RID p_occluder_debug_tex, RID p_viewport, RID p_reflection_atlas, RID p_reflection_probe, int p_reflection_probe_pass, float p_screen_mesh_lod_threshold, const RenderShadowData *p_render_shadows, int p_render_shadow_count, const RenderSDFGIData *p_render_sdfgi_regions, int p_render_sdfgi_region_count, const RenderSDFGIUpdateData *p_sdfgi_update_data, RenderingMethod::RenderInfo *r_render_info) {
+void RendererSceneRenderRD::render_scene(const Ref<RenderSceneBuffers> &p_render_buffers, const CameraData *p_camera_data, const CameraData *p_prev_camera_data, const PagedArray<RenderGeometryInstance *> &p_instances, const PagedArray<RID> &p_lights, const PagedArray<RID> &p_reflection_probes, const PagedArray<RID> &p_voxel_gi_instances, const PagedArray<RID> &p_decals, const PagedArray<RID> &p_lightmaps, const PagedArray<RID> &p_fog_volumes, RID p_environment, RID p_camera_attributes, RID p_compositor, RID p_shadow_atlas, RID p_occluder_debug_tex, RID p_reflection_atlas, RID p_reflection_probe, int p_reflection_probe_pass, float p_screen_mesh_lod_threshold, const RenderShadowData *p_render_shadows, int p_render_shadow_count, const RenderSDFGIData *p_render_sdfgi_regions, int p_render_sdfgi_region_count, const RenderSDFGIUpdateData *p_sdfgi_update_data, RenderingMethod::RenderInfo *r_render_info) {
 	RendererRD::LightStorage *light_storage = RendererRD::LightStorage::get_singleton();
 	RendererRD::TextureStorage *texture_storage = RendererRD::TextureStorage::get_singleton();
 
@@ -1168,7 +1212,6 @@ void RendererSceneRenderRD::render_scene(const Ref<RenderSceneBuffers> &p_render
 		render_data.decals = &p_decals;
 		render_data.lightmaps = &p_lightmaps;
 		render_data.fog_volumes = &p_fog_volumes;
-		render_data.viewport = p_viewport;
 		render_data.environment = p_environment;
 		render_data.compositor = p_compositor;
 		render_data.camera_attributes = p_camera_attributes;

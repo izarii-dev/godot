@@ -414,7 +414,20 @@ void LightStorage::light_instance_set_aabb(RID p_light_instance, const AABB &p_a
 	light_instance->aabb = p_aabb;
 }
 
-void LightStorage::light_instance_set_shadow_transform(RID p_light_instance, const Projection &p_projection, const Transform3D &p_transform, float p_far, float p_split, int p_pass, float p_shadow_texel_size, float p_bias_scale, float p_range_begin, const Vector2 &p_uv_scale, RID p_viewport) {
+void LightStorage::light_instance_set_shadow_transform(RID p_light_instance, const Projection &p_projection, const Transform3D &p_transform, float p_far, float p_split, int p_pass, float p_shadow_texel_size, float p_bias_scale, float p_range_begin, const Vector2 &p_uv_scale) {
+	LightInstance *light_instance = light_instance_owner.get_or_null(p_light_instance);
+	ERR_FAIL_NULL(light_instance);
+
+	ERR_FAIL_INDEX(p_pass, 6);
+
+	light_instance->shadow_transform[p_pass].camera = p_projection;
+	light_instance->shadow_transform[p_pass].transform = p_transform;
+	light_instance->shadow_transform[p_pass].farplane = p_far;
+	light_instance->shadow_transform[p_pass].split = p_split;
+	light_instance->shadow_transform[p_pass].bias_scale = p_bias_scale;
+	light_instance->shadow_transform[p_pass].range_begin = p_range_begin;
+	light_instance->shadow_transform[p_pass].shadow_texel_size = p_shadow_texel_size;
+	light_instance->shadow_transform[p_pass].uv_scale = p_uv_scale;
 }
 
 void LightStorage::light_instance_mark_visible(RID p_light_instance) {

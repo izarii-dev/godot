@@ -54,53 +54,6 @@
 #include "servers/rendering/rendering_device.h"
 #include "servers/rendering/rendering_method.h"
 
-// For RenderDataRD, possibly inherited from RefCounted and add proper getters for our implementation classes
-
-struct RenderDataRD {
-	Ref<RenderSceneBuffersRD> render_buffers;
-	RenderSceneDataRD *scene_data;
-
-	const PagedArray<RenderGeometryInstance *> *instances = nullptr;
-	const PagedArray<RID> *lights = nullptr;
-	const PagedArray<RID> *reflection_probes = nullptr;
-	const PagedArray<RID> *voxel_gi_instances = nullptr;
-	const PagedArray<RID> *decals = nullptr;
-	const PagedArray<RID> *lightmaps = nullptr;
-	const PagedArray<RID> *fog_volumes = nullptr;
-	RID viewport;
-	RID environment;
-	RID camera_attributes;
-	RID shadow_atlas;
-	RID occluder_debug_tex;
-	RID reflection_atlas;
-	RID reflection_probe;
-	int reflection_probe_pass = 0;
-
-	RID cluster_buffer;
-	uint32_t cluster_size = 0;
-	uint32_t cluster_max_elements = 0;
-
-	uint32_t directional_light_count = 0;
-	bool directional_light_soft_shadows = false;
-
-	RenderingMethod::RenderInfo *render_info = nullptr;
-
-	/* Shadow data */
-	const RendererSceneRender::RenderShadowData *render_shadows = nullptr;
-	int render_shadow_count = 0;
-
-	LocalVector<int> cube_shadows;
-	LocalVector<int> shadows;
-	LocalVector<int> directional_shadows;
-
-	/* GI info */
-	const RendererSceneRender::RenderSDFGIData *render_sdfgi_regions = nullptr;
-	int render_sdfgi_region_count = 0;
-	const RendererSceneRender::RenderSDFGIUpdateData *sdfgi_update_data = nullptr;
-
-	uint32_t voxel_gi_count = 0;
-};
-
 class RendererSceneRenderRD : public RendererSceneRender {
 	friend RendererRD::SkyRD;
 	friend RendererRD::GI;
@@ -132,7 +85,7 @@ protected:
 	virtual void setup_render_buffer_data(Ref<RenderSceneBuffersRD> p_render_buffers) = 0;
 
 	virtual void _render_scene(RenderDataRD *p_render_data, const Color &p_default_color) = 0;
-	virtual void _render_buffers_debug_draw(RenderDataRD *p_render_data);
+	virtual void _render_buffers_debug_draw(const RenderDataRD *p_render_data);
 
 	virtual void _render_material(const Transform3D &p_cam_transform, const Projection &p_cam_projection, bool p_cam_orthogonal, const PagedArray<RenderGeometryInstance *> &p_instances, RID p_framebuffer, const Rect2i &p_region, float p_exposure_normalization) = 0;
 	virtual void _render_uv2(const PagedArray<RenderGeometryInstance *> &p_instances, RID p_framebuffer, const Rect2i &p_region) = 0;
@@ -287,7 +240,7 @@ public:
 
 	virtual void base_uniforms_changed() = 0;
 
-	virtual void render_scene(const Ref<RenderSceneBuffers> &p_render_buffers, const CameraData *p_camera_data, const CameraData *p_prev_camera_data, const PagedArray<RenderGeometryInstance *> &p_instances, const PagedArray<RID> &p_lights, const PagedArray<RID> &p_reflection_probes, const PagedArray<RID> &p_voxel_gi_instances, const PagedArray<RID> &p_decals, const PagedArray<RID> &p_lightmaps, const PagedArray<RID> &p_fog_volumes, RID p_environment, RID p_camera_attributes, RID p_shadow_atlas, RID p_occluder_debug_tex, RID p_viewport, RID p_reflection_atlas, RID p_reflection_probe, int p_reflection_probe_pass, float p_screen_mesh_lod_threshold, const RenderShadowData *p_render_shadows, int p_render_shadow_count, const RenderSDFGIData *p_render_sdfgi_regions, int p_render_sdfgi_region_count, const RenderSDFGIUpdateData *p_sdfgi_update_data = nullptr, RenderingMethod::RenderInfo *r_render_info = nullptr) override;
+	virtual void render_scene(const Ref<RenderSceneBuffers> &p_render_buffers, const CameraData *p_camera_data, const CameraData *p_prev_camera_data, const PagedArray<RenderGeometryInstance *> &p_instances, const PagedArray<RID> &p_lights, const PagedArray<RID> &p_reflection_probes, const PagedArray<RID> &p_voxel_gi_instances, const PagedArray<RID> &p_decals, const PagedArray<RID> &p_lightmaps, const PagedArray<RID> &p_fog_volumes, RID p_environment, RID p_camera_attributes, RID p_compositor, RID p_shadow_atlas, RID p_occluder_debug_tex, RID p_reflection_atlas, RID p_reflection_probe, int p_reflection_probe_pass, float p_screen_mesh_lod_threshold, const RenderShadowData *p_render_shadows, int p_render_shadow_count, const RenderSDFGIData *p_render_sdfgi_regions, int p_render_sdfgi_region_count, const RenderSDFGIUpdateData *p_sdfgi_update_data = nullptr, RenderingMethod::RenderInfo *r_render_info = nullptr) override;
 
 	virtual void render_material(const Transform3D &p_cam_transform, const Projection &p_cam_projection, bool p_cam_orthogonal, const PagedArray<RenderGeometryInstance *> &p_instances, RID p_framebuffer, const Rect2i &p_region) override;
 
