@@ -214,11 +214,11 @@ public:
 		VRS_MAX
 	};
 
-	enum CascadeMode {
-		CASCADE_ALL,
-		CASCADE_TWOSTEP,
-		CASCADE_FOURSTEP,
-		CASCADE_MAX
+	enum VRSUpdateMode {
+		VRS_UPDATE_DISABLED,
+		VRS_UPDATE_ONCE,
+		VRS_UPDATE_ALWAYS,
+		VRS_UPDATE_MAX
 	};
 
 private:
@@ -348,9 +348,6 @@ private:
 	VRSMode vrs_mode = VRS_DISABLED;
 	VRSUpdateMode vrs_update_mode = VRS_UPDATE_ONCE;
 	Ref<Texture2D> vrs_texture;
-
-	// Directional shadow cascade
-	CascadeMode cascade_mode = CASCADE_ALL;
 
 	struct GUI {
 		bool mouse_in_viewport = false;
@@ -654,11 +651,6 @@ public:
 	void set_vrs_texture(Ref<Texture2D> p_texture);
 	Ref<Texture2D> get_vrs_texture() const;
 
-	// Directional shadow cascade
-
-	void set_cascade_mode(CascadeMode p_cascade_mode);
-	CascadeMode get_cascade_mode() const;
-
 	virtual DisplayServer::WindowID get_window_id() const = 0;
 
 	void set_embedding_subwindows(bool p_embed);
@@ -862,7 +854,7 @@ VARIANT_ENUM_CAST(Viewport::DebugDraw);
 VARIANT_ENUM_CAST(Viewport::SDFScale);
 VARIANT_ENUM_CAST(Viewport::SDFOversize);
 VARIANT_ENUM_CAST(Viewport::VRSMode);
-VARIANT_ENUM_CAST(Viewport::CascadeMode);
+VARIANT_ENUM_CAST(Viewport::VRSUpdateMode);
 VARIANT_ENUM_CAST(SubViewport::ClearMode);
 VARIANT_ENUM_CAST(Viewport::RenderInfo);
 VARIANT_ENUM_CAST(Viewport::RenderInfoType);

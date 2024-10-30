@@ -442,7 +442,7 @@ public:
 
 	virtual void light_instance_set_transform(RID p_light_instance, const Transform3D &p_transform) override;
 	virtual void light_instance_set_aabb(RID p_light_instance, const AABB &p_aabb) override;
-	virtual void light_instance_set_shadow_transform(RID p_light_instance, const Projection &p_projection, const Transform3D &p_transform, float p_far, float p_split, int p_pass, float p_shadow_texel_size, float p_bias_scale = 1.0, float p_range_begin = 0, const Vector2 &p_uv_scale = Vector2(), RID p_viewport = RID()) override;
+	virtual void light_instance_set_shadow_transform(RID p_light_instance, const Projection &p_projection, const Transform3D &p_transform, float p_far, float p_split, int p_pass, float p_shadow_texel_size, float p_bias_scale = 1.0, float p_range_begin = 0, const Vector2 &p_uv_scale = Vector2()) override;
 	virtual void light_instance_mark_visible(RID p_light_instance) override;
 
 	virtual bool light_instance_is_shadow_visible_at_position(RID p_light_instance, const Vector3 &p_position) const override {
@@ -882,10 +882,24 @@ public:
 	virtual int get_directional_light_shadow_size(RID p_light_intance) override;
 	virtual void set_directional_shadow_count(int p_count) override;
 
-	virtual bool directional_shadow_get_needs_full_update(RID p_viewport) const override { return false; }
-	virtual void directional_shadow_set_needs_full_update(RID p_viewport, bool p_needs_update) override {}
+	Rect2i get_directional_shadow_rect();
+	void update_directional_shadow_atlas();
 
-	virtual void cleanup_directional_shadow_viewport(RID p_viewport) override {}
+	_FORCE_INLINE_ GLuint directional_shadow_get_texture() {
+		return directional_shadow.depth;
+	}
+
+	_FORCE_INLINE_ int directional_shadow_get_size() {
+		return directional_shadow.size;
+	}
+
+	_FORCE_INLINE_ GLuint direction_shadow_get_fb() {
+		return directional_shadow.fbo;
+	}
+
+	_FORCE_INLINE_ void directional_shadow_increase_current_light() {
+		directional_shadow.current_light++;
+	}
 };
 
 } // namespace GLES3
