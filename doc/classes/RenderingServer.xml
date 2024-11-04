@@ -1341,9 +1341,12 @@
 		</method>
 		<method name="environment_set_sdfgi_frames_to_converge">
 			<return type="void" />
-			<param index="0" name="frames" type="int" enum="RenderingServer.EnvironmentSDFGIFramesToConverge" />
+			<param index="0" name="frames" type="int" />
 			<description>
-				Sets the number of frames to use for converging signed distance field global illumination. Equivalent to [member ProjectSettings.rendering/global_illumination/sdfgi/frames_to_converge].
+				Sets the number of frames over which SDFGI indirect lighting should be converged. Higher values result in better quality, but indirect lighting will take more time to update when a light's visibility is toggled or modified in any way. Higher values will also take more time to initially converge. If you want to hide this from the player, you can hide the initial SDFGI convergence by using a loading screen that waits until enough frames have been rendered to let SDFGI converge.
+				[b]Note:[/b] Changing this setting at run-time will reinitialize SDFGI, making it perform its initial convergence again. This means the scene will be temporarily darkened while SDFGI is converging again.
+				[b]Note:[/b] High values can cause performance drops when the camera moves fast. This can be alleviated by lowering this value and increasing [method environment_set_sdfgi_ray_count], which will result in overall lower but more predictable performance. Decreasing the number of SDFGI cascades ([member Environment.sdfgi_cascades]) can also reduce performance drops when the camera moves fast.
+				See also [member ProjectSettings.rendering/global_illumination/sdfgi/frames_to_converge].
 			</description>
 		</method>
 		<method name="environment_set_sdfgi_frames_to_update_light">
@@ -1355,7 +1358,7 @@
 		</method>
 		<method name="environment_set_sdfgi_ray_count">
 			<return type="void" />
-			<param index="0" name="ray_count" type="int" enum="RenderingServer.EnvironmentSDFGIRayCount" />
+			<param index="0" name="ray_count" type="int" />
 			<description>
 				Sets the number of rays to throw per frame when computing signed distance field global illumination. Equivalent to [member ProjectSettings.rendering/global_illumination/sdfgi/probe_ray_count].
 			</description>
@@ -5242,6 +5245,12 @@
 		<constant name="ENV_TONE_MAPPER_TONY_MC_MAPFACE" value="4" enum="EnvironmentToneMapper">
 			Tony McMapface is an artist-friendly tonemapper designed to stay close to the input color in order to achieve a neutral look that does not increase contrast or saturation. It can prevent hue shift issues common with other tonemappers. It samples its own custom lookup table (LUT) to determine the output color.
 		</constant>
+		<constant name="ENV_TONE_MAPPER_AGX" value="5" enum="EnvironmentToneMapper">
+			Use the AgX tonemapper. AgX is slightly more expensive than other options, but it handles bright lighting in a more realistic fashion by desaturating it as it becomes brighter. AgX is less likely to darken parts of the scene compared to [constant ENV_TONE_MAPPER_ACES], and can match [constant ENV_TONE_MAPPER_FILMIC] more closely with whitepoint values above [code]10.0[/code].
+		</constant>
+		<constant name="ENV_TONE_MAPPER_AGX_PUNCHY" value="6" enum="EnvironmentToneMapper">
+			Use the AgX tonemapper with the "punchy" look. AgX is slightly more expensive than other options, but it handles bright lighting in a more realistic fashion by desaturating it as it becomes brighter. The punchy look increases contrast and saturation, bringing its visuals closer to [constant ENV_TONE_MAPPER_ACES].
+		</constant>
 		<constant name="ENV_SSR_ROUGHNESS_QUALITY_DISABLED" value="0" enum="EnvironmentSSRRoughnessQuality">
 			Lowest quality of roughness filter for screen-space reflections. Rough materials will not have blurrier screen-space reflections compared to smooth (non-rough) materials. This is the fastest option.
 		</constant>
@@ -5292,51 +5301,6 @@
 		</constant>
 		<constant name="ENV_SDFGI_Y_SCALE_100_PERCENT" value="2" enum="EnvironmentSDFGIYScale">
 			Use 100% scale for SDFGI on the Y (vertical) axis. SDFGI cells will be as tall as they are wide. This is usually the best choice for highly vertical scenes. The downside is that light leaking may become more noticeable with thin floors and ceilings.
-		</constant>
-		<constant name="ENV_SDFGI_RAY_COUNT_4" value="0" enum="EnvironmentSDFGIRayCount">
-			Throw 4 rays per frame when converging SDFGI. This has the lowest GPU requirements, but creates the most noisy result.
-		</constant>
-		<constant name="ENV_SDFGI_RAY_COUNT_8" value="1" enum="EnvironmentSDFGIRayCount">
-			Throw 8 rays per frame when converging SDFGI.
-		</constant>
-		<constant name="ENV_SDFGI_RAY_COUNT_16" value="2" enum="EnvironmentSDFGIRayCount">
-			Throw 16 rays per frame when converging SDFGI.
-		</constant>
-		<constant name="ENV_SDFGI_RAY_COUNT_32" value="3" enum="EnvironmentSDFGIRayCount">
-			Throw 32 rays per frame when converging SDFGI.
-		</constant>
-		<constant name="ENV_SDFGI_RAY_COUNT_64" value="4" enum="EnvironmentSDFGIRayCount">
-			Throw 64 rays per frame when converging SDFGI.
-		</constant>
-		<constant name="ENV_SDFGI_RAY_COUNT_96" value="5" enum="EnvironmentSDFGIRayCount">
-			Throw 96 rays per frame when converging SDFGI. This has high GPU requirements.
-		</constant>
-		<constant name="ENV_SDFGI_RAY_COUNT_128" value="6" enum="EnvironmentSDFGIRayCount">
-			Throw 128 rays per frame when converging SDFGI. This has very high GPU requirements, but creates the least noisy result.
-		</constant>
-		<constant name="ENV_SDFGI_RAY_COUNT_MAX" value="7" enum="EnvironmentSDFGIRayCount">
-			Represents the size of the [enum EnvironmentSDFGIRayCount] enum.
-		</constant>
-		<constant name="ENV_SDFGI_CONVERGE_IN_5_FRAMES" value="0" enum="EnvironmentSDFGIFramesToConverge">
-			Converge SDFGI over 5 frames. This is the most responsive, but creates the most noisy result with a given ray count.
-		</constant>
-		<constant name="ENV_SDFGI_CONVERGE_IN_10_FRAMES" value="1" enum="EnvironmentSDFGIFramesToConverge">
-			Configure SDFGI to fully converge over 10 frames.
-		</constant>
-		<constant name="ENV_SDFGI_CONVERGE_IN_15_FRAMES" value="2" enum="EnvironmentSDFGIFramesToConverge">
-			Configure SDFGI to fully converge over 15 frames.
-		</constant>
-		<constant name="ENV_SDFGI_CONVERGE_IN_20_FRAMES" value="3" enum="EnvironmentSDFGIFramesToConverge">
-			Configure SDFGI to fully converge over 20 frames.
-		</constant>
-		<constant name="ENV_SDFGI_CONVERGE_IN_25_FRAMES" value="4" enum="EnvironmentSDFGIFramesToConverge">
-			Configure SDFGI to fully converge over 25 frames.
-		</constant>
-		<constant name="ENV_SDFGI_CONVERGE_IN_30_FRAMES" value="5" enum="EnvironmentSDFGIFramesToConverge">
-			Configure SDFGI to fully converge over 30 frames. This is the least responsive, but creates the least noisy result with a given ray count.
-		</constant>
-		<constant name="ENV_SDFGI_CONVERGE_MAX" value="6" enum="EnvironmentSDFGIFramesToConverge">
-			Represents the size of the [enum EnvironmentSDFGIFramesToConverge] enum.
 		</constant>
 		<constant name="ENV_SDFGI_UPDATE_LIGHT_IN_1_FRAME" value="0" enum="EnvironmentSDFGIFramesToUpdateLight">
 			Update indirect light from dynamic lights in SDFGI over 1 frame. This is the most responsive, but has the highest GPU requirements.

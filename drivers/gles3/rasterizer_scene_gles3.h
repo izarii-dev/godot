@@ -805,8 +805,8 @@ public:
 
 	void environment_set_ssil_quality(RS::EnvironmentSSILQuality p_quality, bool p_half_size, float p_adaptive_target, int p_blur_passes, float p_fadeout_from, float p_fadeout_to) override;
 
-	void environment_set_sdfgi_ray_count(RS::EnvironmentSDFGIRayCount p_ray_count) override;
-	void environment_set_sdfgi_frames_to_converge(RS::EnvironmentSDFGIFramesToConverge p_frames) override;
+	void environment_set_sdfgi_ray_count(int p_ray_count) override;
+	void environment_set_sdfgi_frames_to_converge(int p_frames) override;
 	void environment_set_sdfgi_frames_to_update_light(RS::EnvironmentSDFGIFramesToUpdateLight p_update) override;
 
 	void environment_set_volumetric_fog_volume_size(int p_size, int p_depth) override;

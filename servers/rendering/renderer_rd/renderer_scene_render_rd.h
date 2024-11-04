@@ -194,8 +194,8 @@ public:
 	virtual void environment_set_volumetric_fog_volume_size(int p_size, int p_depth) override;
 	virtual void environment_set_volumetric_fog_filter_active(bool p_enable) override;
 
-	virtual void environment_set_sdfgi_ray_count(RS::EnvironmentSDFGIRayCount p_ray_count) override;
-	virtual void environment_set_sdfgi_frames_to_converge(RS::EnvironmentSDFGIFramesToConverge p_frames) override;
+	virtual void environment_set_sdfgi_ray_count(int p_ray_count) override;
+	virtual void environment_set_sdfgi_frames_to_converge(int p_frames) override;
 	virtual void environment_set_sdfgi_frames_to_update_light(RS::EnvironmentSDFGIFramesToUpdateLight p_update) override;
 
 	virtual Ref<Image> environment_bake_panorama(RID p_env, bool p_bake_irradiance, const Size2i &p_size) override;

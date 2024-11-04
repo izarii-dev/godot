@@ -103,20 +103,7 @@ void RenderSceneBuffersRD::free_named_texture(NamedTexture &p_named_texture) {
 
 void RenderSceneBuffersRD::update_samplers() {
 	float computed_mipmap_bias = texture_mipmap_bias;
-
-	if (use_taa || (scaling_3d_mode == RS::VIEWPORT_SCALING_3D_MODE_FSR2)) {
-		// Use negative mipmap LOD bias when TAA or FSR2 is enabled to compensate for loss of sharpness.
-		// This restores sharpness in still images to be roughly at the same level as without TAA,
-		// but moving scenes will still be blurrier.
-		computed_mipmap_bias -= 0.5;
-	}
-
-	if (screen_space_aa == RS::VIEWPORT_SCREEN_SPACE_AA_FXAA) {
-		// Use negative mipmap LOD bias when FXAA is enabled to compensate for loss of sharpness.
-		// If both TAA and FXAA are enabled, combine their negative LOD biases together.
-		computed_mipmap_bias -= 0.25;
-	}
-
+	
 	RendererRD::MaterialStorage *material_storage = RendererRD::MaterialStorage::get_singleton();
 	material_storage->samplers_rd_free(samplers);
 	samplers = material_storage->samplers_rd_allocate(computed_mipmap_bias);

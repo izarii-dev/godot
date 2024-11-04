@@ -1,0 +1,1 @@
+scons platform=windows d3d12=yes mesa_libs=/mnt/c/Users/OS/Downloads/godo use_mingw=yes production=yes lto=full target=template_release arch=x86_32

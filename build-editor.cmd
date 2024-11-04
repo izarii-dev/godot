@@ -1,0 +1,1 @@
+scons platform=windows d3d12=yes mesa_libs=C:\Users\OS\Downloads\godo use_mingw=yes production=yes lto=full

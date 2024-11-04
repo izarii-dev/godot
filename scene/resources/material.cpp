@@ -2767,7 +2767,6 @@ void BaseMaterial3D::set_heightmap_deep_parallax_correct_shadow_receive(bool p_e
 	}
 
 	heightmap_parallax_correct_shadow_receive = p_enable;
-	_queue_shader_change();
 }
 
 bool BaseMaterial3D::is_heightmap_deep_parallax_correcting_shadow_receive() const {
@@ -2780,7 +2779,6 @@ void BaseMaterial3D::set_heightmap_deep_parallax_write_depth(bool p_enable) {
 	}
 
 	heightmap_parallax_write_depth = p_enable;
-	_queue_shader_change();
 }
 
 bool BaseMaterial3D::is_heightmap_deep_parallax_writing_depth() const {
@@ -2793,7 +2791,6 @@ void BaseMaterial3D::set_heightmap_deep_parallax_trim_edges(bool p_enable) {
 	}
 
 	heightmap_parallax_trim_edges = p_enable;
-	_queue_shader_change();
 }
 
 bool BaseMaterial3D::is_heightmap_deep_parallax_trimming_edges() const {

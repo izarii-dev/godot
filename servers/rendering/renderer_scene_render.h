@@ -246,8 +246,8 @@ public:
 	float environment_get_sdfgi_probe_bias(RID p_env) const;
 	RS::EnvironmentSDFGIYScale environment_get_sdfgi_y_scale(RID p_env) const;
 
-	virtual void environment_set_sdfgi_ray_count(RS::EnvironmentSDFGIRayCount p_ray_count) = 0;
-	virtual void environment_set_sdfgi_frames_to_converge(RS::EnvironmentSDFGIFramesToConverge p_frames) = 0;
+	virtual void environment_set_sdfgi_ray_count(int p_ray_count) = 0;
+	virtual void environment_set_sdfgi_frames_to_converge(int p_frames) = 0;
 	virtual void environment_set_sdfgi_frames_to_update_light(RS::EnvironmentSDFGIFramesToUpdateLight p_update) = 0;
 
 	// Adjustment

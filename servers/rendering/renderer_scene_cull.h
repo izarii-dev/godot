@@ -1387,8 +1387,8 @@ public:
 	PASS1RC(float, environment_get_sdfgi_probe_bias, RID)
 	PASS1RC(RS::EnvironmentSDFGIYScale, environment_get_sdfgi_y_scale, RID)
 
-	PASS1(environment_set_sdfgi_ray_count, RS::EnvironmentSDFGIRayCount)
-	PASS1(environment_set_sdfgi_frames_to_converge, RS::EnvironmentSDFGIFramesToConverge)
+	PASS1(environment_set_sdfgi_ray_count, int)
+	PASS1(environment_set_sdfgi_frames_to_converge, int)
 	PASS1(environment_set_sdfgi_frames_to_update_light, RS::EnvironmentSDFGIFramesToUpdateLight)
 
 	// Adjustment

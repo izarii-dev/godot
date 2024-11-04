@@ -1099,10 +1099,10 @@ void RasterizerSceneGLES3::environment_set_ssao_quality(RS::EnvironmentSSAOQuali
 void RasterizerSceneGLES3::environment_set_ssil_quality(RS::EnvironmentSSILQuality p_quality, bool p_half_size, float p_adaptive_target, int p_blur_passes, float p_fadeout_from, float p_fadeout_to) {
 }
 
-void RasterizerSceneGLES3::environment_set_sdfgi_ray_count(RS::EnvironmentSDFGIRayCount p_ray_count) {
+void RasterizerSceneGLES3::environment_set_sdfgi_ray_count(int p_ray_count) {
 }
 
-void RasterizerSceneGLES3::environment_set_sdfgi_frames_to_converge(RS::EnvironmentSDFGIFramesToConverge p_frames) {
+void RasterizerSceneGLES3::environment_set_sdfgi_frames_to_converge(int p_frames) {
 }
 
 void RasterizerSceneGLES3::environment_set_sdfgi_frames_to_update_light(RS::EnvironmentSDFGIFramesToUpdateLight p_update) {
