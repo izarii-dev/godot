@@ -50,7 +50,6 @@ void RendererCanvasCull::_render_canvas_item_tree(RID p_to_render_target, Canvas
 	memset(z_list, 0, z_range * sizeof(RendererCanvasRender::Item *));
 	memset(z_last_list, 0, z_range * sizeof(RendererCanvasRender::Item *));
 
-	RendererCanvasCull::MinMaxPair min_max_pair;
 	for (int i = 0; i < p_child_item_count; i++) {
 		_cull_canvas_item(p_child_items[i].item, p_transform, p_clip_rect, Color(1, 1, 1, 1), 0, z_list, z_last_list, nullptr, nullptr, false, p_canvas_cull_mask, Point2(), 1, nullptr);
 	}
@@ -58,7 +57,7 @@ void RendererCanvasCull::_render_canvas_item_tree(RID p_to_render_target, Canvas
 	RendererCanvasRender::Item *list = nullptr;
 	RendererCanvasRender::Item *list_end = nullptr;
 
-	for (unsigned int i = min_max_pair.get_min(); i <= min_max_pair.get_max(); i++) {
+	for (int i = 0; i < z_range; i++) {
 		if (!z_list[i]) {
 			continue;
 		}
@@ -151,18 +150,16 @@ void RendererCanvasCull::_mark_ysort_dirty(RendererCanvasCull::Item *ysort_owner
 	} while (ysort_owner && ysort_owner->sort_y);
 }
 
-RendererCanvasCull::MinMaxPair RendererCanvasCull::_attach_canvas_item_for_draw(RendererCanvasCull::Item *ci, RendererCanvasCull::Item *p_canvas_clip, RendererCanvasRender::Item **r_z_list, RendererCanvasRender::Item **r_z_last_list, const Transform2D &p_transform, const Rect2 &p_clip_rect, Rect2 p_global_rect, const Color &p_modulate, int p_z, RendererCanvasCull::Item *p_material_owner, bool p_use_canvas_group, RendererCanvasRender::Item *r_canvas_group_from) {
+void RendererCanvasCull::_attach_canvas_item_for_draw(RendererCanvasCull::Item *ci, RendererCanvasCull::Item *p_canvas_clip, RendererCanvasRender::Item **r_z_list, RendererCanvasRender::Item **r_z_last_list, const Transform2D &p_transform, const Rect2 &p_clip_rect, Rect2 p_global_rect, const Color &p_modulate, int p_z, RendererCanvasCull::Item *p_material_owner, bool p_use_canvas_group, RendererCanvasRender::Item *r_canvas_group_from) {
 	if (ci->copy_back_buffer) {
 		ci->copy_back_buffer->screen_rect = p_transform.xform(ci->copy_back_buffer->rect).intersection(p_clip_rect);
 	}
 
-	RendererCanvasCull::MinMaxPair min_max_pair;
 	if (p_use_canvas_group) {
 		int zidx = p_z - RS::CANVAS_ITEM_Z_MIN;
 		if (r_canvas_group_from == nullptr) {
 			// no list before processing this item, means must put stuff in group from the beginning of list.
 			r_canvas_group_from = r_z_list[zidx];
-			min_max_pair.include(zidx);
 		} else {
 			// there was a list before processing, so begin group from this one.
 			r_canvas_group_from = r_canvas_group_from->next;
@@ -244,7 +241,6 @@ RendererCanvasCull::MinMaxPair RendererCanvasCull::_attach_canvas_item_for_draw(
 			} else {
 				r_z_list[zidx] = ci;
 				r_z_last_list[zidx] = ci;
-				min_max_pair.include(zidx);
 			}
 
 			ci->z_final = p_z;
@@ -264,19 +260,17 @@ RendererCanvasCull::MinMaxPair RendererCanvasCull::_attach_canvas_item_for_draw(
 		// If repeat source does not draw itself it still needs transform updated as its child items' repeat offsets are relative to it.
 		ci->final_transform = p_transform;
 	}
-
-	return min_max_pair;
 }
 
 void RendererCanvasCull::_cull_canvas_item(Item *p_canvas_item, const Transform2D &p_parent_xform, const Rect2 &p_clip_rect, const Color &p_modulate, int p_z, RendererCanvasRender::Item **r_z_list, RendererCanvasRender::Item **r_z_last_list, Item *p_canvas_clip, Item *p_material_owner, bool p_is_already_y_sorted, uint32_t p_canvas_cull_mask, const Point2 &p_repeat_size, int p_repeat_times, RendererCanvasRender::Item *p_repeat_source_item) {
 	Item *ci = p_canvas_item;
 
 	if (!ci->visible) {
-		return RendererCanvasCull::MinMaxPair();
+		return;
 	}
 
 	if (!(ci->visibility_layer & p_canvas_cull_mask)) {
-		return RendererCanvasCull::MinMaxPair();
+		return;
 	}
 
 	if (ci->children_order_dirty) {
@@ -362,7 +356,7 @@ void RendererCanvasCull::_cull_canvas_item(Item *p_canvas_item, const Transform2
 	Color modulate(ci->modulate.r * p_modulate.r, ci->modulate.g * p_modulate.g, ci->modulate.b * p_modulate.b, ci->modulate.a * p_modulate.a);
 
 	if (modulate.a < 0.007) {
-		return RendererCanvasCull::MinMaxPair();
+		return;
 	}
 
 	int child_item_count = ci->child_items.size();
@@ -376,7 +370,7 @@ void RendererCanvasCull::_cull_canvas_item(Item *p_canvas_item, const Transform2
 		}
 		if (ci->final_clip_rect.size.width < 0.5 || ci->final_clip_rect.size.height < 0.5) {
 			// The clip rect area is 0, so don't draw the item.
-			return RendererCanvasCull::MinMaxPair();
+			return;
 		}
 		ci->final_clip_rect.position = ci->final_clip_rect.position.round();
 		ci->final_clip_rect.size = ci->final_clip_rect.size.round();
@@ -413,12 +407,9 @@ void RendererCanvasCull::_cull_canvas_item(Item *p_canvas_item, const Transform2
 			SortArray<Item *, ItemYSort> sorter;
 			sorter.sort(child_items, child_item_count);
 
-			RendererCanvasCull::MinMaxPair min_max_pair;
 			for (i = 0; i < child_item_count; i++) {
 				_cull_canvas_item(child_items[i], final_xform * child_items[i]->ysort_xform, p_clip_rect, modulate * child_items[i]->ysort_modulate, child_items[i]->ysort_parent_abs_z_index, r_z_list, r_z_last_list, (Item *)ci->final_clip_owner, (Item *)child_items[i]->material_owner, true, p_canvas_cull_mask, child_items[i]->repeat_size, child_items[i]->repeat_times, child_items[i]->repeat_source_item);
 			}
-
-			return min_max_pair;
 		} else {
 			RendererCanvasRender::Item *canvas_group_from = nullptr;
 			bool use_canvas_group = ci->canvas_group != nullptr && (ci->canvas_group->fit_empty || ci->commands != nullptr);
@@ -427,7 +418,7 @@ void RendererCanvasCull::_cull_canvas_item(Item *p_canvas_item, const Transform2
 				canvas_group_from = r_z_last_list[zidx];
 			}
 
-			return _attach_canvas_item_for_draw(ci, p_canvas_clip, r_z_list, r_z_last_list, final_xform, p_clip_rect, global_rect, modulate, p_z, p_material_owner, use_canvas_group, canvas_group_from);
+			_attach_canvas_item_for_draw(ci, p_canvas_clip, r_z_list, r_z_last_list, final_xform, p_clip_rect, global_rect, modulate, p_z, p_material_owner, use_canvas_group, canvas_group_from);
 		}
 	} else {
 		RendererCanvasRender::Item *canvas_group_from = nullptr;
@@ -437,22 +428,19 @@ void RendererCanvasCull::_cull_canvas_item(Item *p_canvas_item, const Transform2
 			canvas_group_from = r_z_last_list[zidx];
 		}
 
-		RendererCanvasCull::MinMaxPair min_max_pair;
 		for (int i = 0; i < child_item_count; i++) {
 			if (!child_items[i]->behind && !use_canvas_group) {
 				continue;
 			}
 			_cull_canvas_item(child_items[i], final_xform, p_clip_rect, modulate, p_z, r_z_list, r_z_last_list, (Item *)ci->final_clip_owner, p_material_owner, false, p_canvas_cull_mask, repeat_size, repeat_times, repeat_source_item);
 		}
-		min_max_pair.merge(_attach_canvas_item_for_draw(ci, p_canvas_clip, r_z_list, r_z_last_list, final_xform, p_clip_rect, global_rect, modulate, p_z, p_material_owner, use_canvas_group, canvas_group_from));
+		_attach_canvas_item_for_draw(ci, p_canvas_clip, r_z_list, r_z_last_list, final_xform, p_clip_rect, global_rect, modulate, p_z, p_material_owner, use_canvas_group, canvas_group_from);
 		for (int i = 0; i < child_item_count; i++) {
 			if (child_items[i]->behind || use_canvas_group) {
 				continue;
 			}
 			_cull_canvas_item(child_items[i], final_xform, p_clip_rect, modulate, p_z, r_z_list, r_z_last_list, (Item *)ci->final_clip_owner, p_material_owner, false, p_canvas_cull_mask, repeat_size, repeat_times, repeat_source_item);
 		}
-
-		return min_max_pair;
 	}
 }
 
