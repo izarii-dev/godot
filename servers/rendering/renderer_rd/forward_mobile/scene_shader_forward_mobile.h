@@ -110,18 +110,6 @@ public:
 			DEPTH_DRAW_ALWAYS
 		};
 
-		enum DepthFunction {
-			DEPTH_FUNCTION_LESS_OR_EQUAL,
-			DEPTH_FUNCTION_LESS,
-			DEPTH_FUNCTION_EQUAL,
-			DEPTH_FUNCTION_GREATER,
-			DEPTH_FUNCTION_NOT_EQUAL,
-			DEPTH_FUNCTION_GREATER_OR_EQUAL,
-			DEPTH_FUNCTION_ALWAYS,
-			DEPTH_FUNCTION_NEVER,
-			DEPTH_FUNCTION_MAX
-		};
-
 		enum DepthTest {
 			DEPTH_TEST_DISABLED,
 			DEPTH_TEST_ENABLED
@@ -147,24 +135,36 @@ public:
 			ALPHA_ANTIALIASING_ALPHA_TO_COVERAGE_AND_TO_ONE
 		};
 
-		enum StencilFlags {
-			STENCIL_FLAG_READ = 1,
-			STENCIL_FLAG_WRITE = 2,
-			STENCIL_FLAG_WRITE_DEPTH_FAIL = 4,
+		struct PipelineKey {
+			RD::VertexFormatID vertex_format_id;
+			RD::FramebufferFormatID framebuffer_format_id;
+			RD::PolygonCullMode cull_mode = RD::POLYGON_CULL_MAX;
+			RS::PrimitiveType primitive_type = RS::PRIMITIVE_MAX;
+			ShaderSpecialization shader_specialization = {};
+			ShaderVersion version = SHADER_VERSION_MAX;
+			uint32_t render_pass = 0;
+			uint32_t wireframe = false;
+			uint32_t ubershader = false;
+
+			uint32_t hash() const {
+				uint32_t h = hash_murmur3_one_32(vertex_format_id);
+				h = hash_murmur3_one_32(framebuffer_format_id, h);
+				h = hash_murmur3_one_32(cull_mode, h);
+				h = hash_murmur3_one_32(primitive_type, h);
+				h = hash_murmur3_one_32(shader_specialization.packed_0, h);
+				h = hash_murmur3_one_float(shader_specialization.packed_1, h);
+				h = hash_murmur3_one_32(shader_specialization.packed_2, h);
+				h = hash_murmur3_one_32(version, h);
+				h = hash_murmur3_one_32(render_pass, h);
+				h = hash_murmur3_one_32(wireframe, h);
+				h = hash_murmur3_one_32(ubershader, h);
+				return hash_fmix32(h);
+			}
 		};
 
-		enum StencilCompare {
-			STENCIL_COMPARE_LESS,
-			STENCIL_COMPARE_EQUAL,
-			STENCIL_COMPARE_LESS_OR_EQUAL,
-			STENCIL_COMPARE_GREATER,
-			STENCIL_COMPARE_NOT_EQUAL,
-			STENCIL_COMPARE_GREATER_OR_EQUAL,
-			STENCIL_COMPARE_ALWAYS,
-			STENCIL_COMPARE_MAX // Not an actual operator, just the amount of operators.
-		};
+		void _create_pipeline(PipelineKey p_pipeline_key);
+		PipelineHashMapRD<PipelineKey, ShaderData, void (ShaderData::*)(PipelineKey)> pipeline_hash_map;
 
-		bool valid = false;
 		RID version;
 
 		static const uint32_t VERTEX_INPUT_MASKS_SIZE = SHADER_VERSION_MAX * 2;
@@ -178,7 +178,6 @@ public:
 		String code;
 
 		DepthDraw depth_draw;
-		DepthFunction depth_function;
 		DepthTest depth_test;
 
 		int blend_mode = BLEND_MODE_MIX;
@@ -213,11 +212,6 @@ public:
 		bool uses_fragment_time = false;
 		bool writes_modelview_or_projection = false;
 		bool uses_world_coordinates = false;
-
-		bool stencil_enabled = false;
-		uint32_t stencil_flags = 0;
-		StencilCompare stencil_compare = STENCIL_COMPARE_LESS;
-		uint32_t stencil_reference = 0;
 
 		uint64_t last_pass = 0;
 		uint32_t index = 0;
